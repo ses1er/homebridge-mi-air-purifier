@@ -12,6 +12,7 @@ module.exports = function(homebridge) {
 
 function MiAirPurifier(log, config) {
     this.log = log;
+    this.config = config;
     this.ip = config.ip;
     this.token = config.token;
     this.name = config.name || 'Air Purifier';
@@ -32,8 +33,10 @@ function MiAirPurifier(log, config) {
     this.aqi = null;
 
     if (config.mqtt) {
-      log.info("MQTT is enabled: ,mqtt://",config.mqtt_host);
+      this.mqtt_enabled = true;
+      log.info("MQTT is enabled: mqtt://",config.mqtt_host);
       this.mqtt = mqtt.connect("mqtt://" + config.mqtt_host);
+      this.mqtt_topic = config.mqtt_topic;
     }
 
     this.levels = [
@@ -99,7 +102,6 @@ function MiAirPurifier(log, config) {
     this.airQualitySensorService
       .getCharacteristic(Characteristic.PM2_5Density)
       .on('get', this.getPM25.bind(this));
-
     this.services.push(this.airQualitySensorService);
   }
 
@@ -126,7 +128,6 @@ function MiAirPurifier(log, config) {
       .getCharacteristic(Characteristic.On)
       .on('get', this.getLED.bind(this))
       .on('set', this.setLED.bind(this));
-
     this.services.push(this.lightBulbService);
   }
 
@@ -154,8 +155,8 @@ MiAirPurifier.prototype = {
     .then(device => {
       if (device.matches('type:air-purifier')) {
         that.device = device;
-        log.info('Discovered Mi Air Purifier (%s) at %s', device.model, this.ip);
-        log.debug('Model       : ' + device.model);
+        log.info('Discovered Mi Air Purifier (%s) at %s', device.miioModel, this.ip);
+        log.debug('Model       : ' + device.miioModel);
         log.debug('Power       : ' + device.power());
         log.debug('Mode        : ' + device.mode());
         log.debug('Temperature : ' + device.temperature());
@@ -393,7 +394,9 @@ MiAirPurifier.prototype = {
       callback(new Error('No Air Purifier is discovered.'));
       return;
     }
-
+    if (this.mqtt_enabled) {
+      this.mqtt.publish(this.mqtt_topic + "/temperature","{\"temperature\":" + this.temperature + "}");
+    }
     this.log.debug('getTemperature: %s', this.temperature);
 
     callback(null, this.temperature);
@@ -406,7 +409,9 @@ MiAirPurifier.prototype = {
 
     this.temperature = value;
     this.log.debug('updateTemperature: %s', value);
-
+    if (this.mqtt_enabled) {
+      this.mqtt.publish(this.mqtt_topic + "/temperature","{\"temperature\":" + value + "}");
+    }
     this.temperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature).updateValue(value);
   },
 
