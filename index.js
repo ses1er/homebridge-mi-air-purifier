@@ -395,7 +395,10 @@ MiAirPurifier.prototype = {
       return;
     }
     if (this.mqtt_enabled) {
-      this.mqtt.publish(this.mqtt_topic + "/temperature","{\"temperature\":" + this.temperature + "}");
+      let json_temperature = {
+        temperature: this.temperature
+      };
+      this.mqtt.publish(this.mqtt_topic + "/temperature",JSON.stringify(json_temperature));
     }
     this.log.debug('getTemperature: %s', this.temperature);
 
@@ -410,7 +413,10 @@ MiAirPurifier.prototype = {
     this.temperature = value;
     this.log.debug('updateTemperature: %s', value);
     if (this.mqtt_enabled) {
-      this.mqtt.publish(this.mqtt_topic + "/temperature","{\"temperature\":" + value + "}");
+      let json_temperature = {
+        temperature: value
+      };
+      this.mqtt.publish(this.mqtt_topic + "/temperature",JSON.stringify(json_temperature));
     }
     this.temperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature).updateValue(value);
   },
