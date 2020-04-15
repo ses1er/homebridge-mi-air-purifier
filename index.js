@@ -31,9 +31,9 @@ function MiAirPurifier(log, config) {
     this.humidity = null;
     this.aqi = null;
 
-    if (this.config['mqtt']) {
-      log.info("MQTT is enabled: ,mqtt://",config['mqtt_host']);
-      this.mqtt = mqtt.connect("mqtt://" + config['mqtt_host']);
+    if (config.mqtt) {
+      log.info("MQTT is enabled: ,mqtt://",config.mqtt_host);
+      this.mqtt = mqtt.connect("mqtt://" + config.mqtt_host);
     }
 
     this.levels = [
